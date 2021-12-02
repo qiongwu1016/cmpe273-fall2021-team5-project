@@ -68,3 +68,6 @@ Team 4:
 
 ![locustres](screenshots/locustres.png)
 
+3. Log
+  - Log printed in terminal to show failed server being removed or added back
+  ![image](https://user-images.githubusercontent.com/70813818/144513753-7a591c04-bbd5-444a-8411-fd7e4f468f04.png)
