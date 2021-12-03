@@ -18,8 +18,7 @@ class CircuitBreaker(object):
         self._is_closed = True
         self._failure_count = 0
 
-
-    def open(self,serverIP):
+    def open(self, serverIP):
         print('server ip:', serverIP)
         self.totalFailuresPerServer[serverIP] = 0
         myclient = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -30,10 +29,10 @@ class CircuitBreaker(object):
         time.sleep(10)
         coll.insert_one({'URL': serverIP})
         print(serverIP, "added back to server list.")
-        
-
 
     def can_execute(self):
+        # check if the proxy could connect to servers, if not we would remain open the circuit breaker
+        # if so, we would close the circuit breaker, and reset the fail num to 0
         if not self._is_closed:
             self._open_until = self._opened_since + timedelta(seconds=self._reset_timeout)
             self._open_remaining = (self._open_until - datetime.utcnow()).total_seconds()
@@ -44,7 +43,7 @@ class CircuitBreaker(object):
     def __call__(self, func, *args, **kwargs):
         if self._name is None:
             self._name = func.__name__
-            print("Failure count before is: ",self._failure_count)
+            print("Failure count before is: ", self._failure_count)
 
         @wraps(func)
         def with_circuitbreaker(*args, **kwargs):
@@ -64,15 +63,15 @@ class CircuitBreaker(object):
             raise Exception(err)
         try:
             result = func(*args, **kwargs)
-            self.totalFailuresPerServer[serverIP]=0 #setting failure count as 0 as the request got through
-         #   print("Failure count after is: ", self.totalFailuresPerServer[serverIP])
+            self.totalFailuresPerServer[serverIP] = 0  # setting failure count as 0 as the request got through
+        #   print("Failure count after is: ", self.totalFailuresPerServer[serverIP])
         except self._expected_exception:
             self._failure_count += 1
             if serverIP in self.totalFailuresPerServer:
                 print(serverIP)
-                self.totalFailuresPerServer[serverIP] +=1 #increasing the failure count y 1.
+                self.totalFailuresPerServer[serverIP] += 1  # increasing the failure count y 1.
             else:
-                self.totalFailuresPerServer[serverIP]=1 #setting the failure count as 1 for the new server.
+                self.totalFailuresPerServer[serverIP] = 1  # setting the failure count as 1 for the new server.
             if self.totalFailuresPerServer[serverIP] >= self._max_failure_to_open:
                 self.open(serverIP)
             raise self._expected_exception
